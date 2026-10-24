@@ -1,4 +1,5 @@
 """CSV handling and preprocessing, without machine-learning libraries."""
+
 import csv
 from pathlib import Path
 
@@ -32,7 +33,11 @@ def load_csv(path):
             row = [cell.strip() for cell in row]
             if row[-1] == '':
                 row = row[:-1]
-            if not rows and len(row) > 1 and row[1].lower() in ('diagnosis', 'label'):
+            if (
+                not rows
+                and len(row) > 1
+                and row[1].lower() in ('diagnosis', 'label')
+            ):
                 continue
             validate_data_row(row, path, line)
             rows.append(row)
@@ -50,7 +55,10 @@ def split_indices(y, ratio, seed):
     for label in (0, 1):
         indices = rng.permutation(np.flatnonzero(y == label))
         if len(indices) < 2:
-            raise ValueError('each class needs at least two samples for stratified splitting')
+            raise ValueError(
+                'each class needs at least two samples '
+                'for stratified splitting'
+            )
         cut = min(len(indices) - 1, max(1, int(len(indices) * ratio)))
         train.extend(indices[:cut])
         valid.extend(indices[cut:])

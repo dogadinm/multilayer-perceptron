@@ -1,4 +1,7 @@
-"""Monitor validation loss and retain independent copies of the best parameters."""
+"""Monitor validation loss and retain independent copies of the best
+parameters.
+"""
+
 import numpy as np
 
 
@@ -15,12 +18,15 @@ class EarlyStopping:
     def observe(self, model, validation_loss, epoch):
         if not np.isfinite(validation_loss):
             raise ValueError('validation loss must be finite')
-        # Always retain the actual lowest loss, even for improvements below min_delta.
+        # Always retain the actual lowest loss, even for improvements below
+        # min_delta.
         if validation_loss < self.best_loss:
             self.best_loss = validation_loss
             self.best_epoch = epoch
-            self.best_parameters = ([w.copy() for w in model.weights],
-                                    [b.copy() for b in model.biases])
+            self.best_parameters = (
+                [w.copy() for w in model.weights],
+                [b.copy() for b in model.biases],
+            )
         if validation_loss < self.reference_loss - self.min_delta:
             self.reference_loss = validation_loss
             self.wait = 0

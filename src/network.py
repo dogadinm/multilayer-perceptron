@@ -1,4 +1,7 @@
-"""Dense neural network: explicit forward propagation, backpropagation and parameter updates."""
+"""Dense neural network: explicit forward propagation, backpropagation and
+parameter updates.
+"""
+
 from pathlib import Path
 import numpy as np
 
@@ -9,12 +12,16 @@ def linear(inputs, weights, bias):
 
 
 def relu(z):
-    """Hidden-layer activation: keep positive values and replace the rest with zero."""
+    """Hidden-layer activation: keep positive values and replace the rest with
+    zero.
+    """
     return np.maximum(0, z)
 
 
 def relu_derivative(activations):
-    """Use cached ReLU outputs: the derivative is 1 for outputs > 0, otherwise 0."""
+    """Use cached ReLU outputs: the derivative is 1 for outputs > 0, otherwise
+    0.
+    """
     return (activations > 0).astype(float)
 
 
@@ -44,7 +51,9 @@ def accuracy_score(y, probabilities):
 
 
 def softmax_cross_entropy_gradient(y, probabilities):
-    """Gradient of mean loss with respect to logits: (P - one_hot(y)) / batch_size."""
+    """Gradient of mean loss with respect to logits: (P - one_hot(y)) /
+    batch_size.
+    """
     gradient = probabilities.copy()
     gradient[np.arange(len(y)), y] -= 1
     return gradient / len(y)
@@ -52,12 +61,21 @@ def softmax_cross_entropy_gradient(y, probabilities):
 
 class Network:
     def __init__(self, layers=(30, 24, 24, 2), seed=42):
-        if len(layers) < 3 or layers[0] != 30 or layers[-1] != 2 or any(n <= 0 for n in layers):
-            raise ValueError('architecture must be 30 -> positive hidden sizes -> 2')
+        if (
+            len(layers) < 3
+            or layers[0] != 30
+            or layers[-1] != 2
+            or any(n <= 0 for n in layers)
+        ):
+            raise ValueError(
+                'architecture must be 30 -> positive hidden sizes -> 2'
+            )
         self.layers = list(layers)
         rng = np.random.default_rng(seed)
-        self.weights = [rng.normal(0, np.sqrt(2 / a), (a, b))
-                        for a, b in zip(layers[:-1], layers[1:])]
+        self.weights = [
+            rng.normal(0, np.sqrt(2 / a), (a, b))
+            for a, b in zip(layers[:-1], layers[1:])
+        ]
         self.biases = [np.zeros((1, b)) for b in layers[1:]]
 
     def forward(self, x):
@@ -88,7 +106,9 @@ class Network:
 
             if layer > 0:
                 input_gradient = output_gradient @ self.weights[layer].T
-                output_gradient = input_gradient * relu_derivative(layer_inputs)
+                output_gradient = input_gradient * relu_derivative(
+                    layer_inputs
+                )
 
         return weight_gradients, bias_gradients
 
@@ -104,7 +124,9 @@ class Network:
             self.biases[layer] -= learning_rate * bias_gradients[layer]
 
     def train_batch(self, x, y, learning_rate, optimizer=None):
-        """Train on one batch: compute gradients, then apply SGD or the supplied optimizer."""
+        """Train on one batch: compute gradients, then apply SGD or the
+        supplied optimizer.
+        """
         weight_gradients, bias_gradients = self.compute_gradients(x, y)
         if optimizer is None:
             self.sgd_update(weight_gradients, bias_gradients, learning_rate)
@@ -127,8 +149,13 @@ class Network:
 
     def save(self, path, mean, scale):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-        payload = dict(version=np.array(1), layers=np.array(self.layers), mean=mean,
-                       scale=scale, classes=np.array(['B', 'M']))
+        payload = dict(
+            version=np.array(1),
+            layers=np.array(self.layers),
+            mean=mean,
+            scale=scale,
+            classes=np.array(['B', 'M']),
+        )
         payload.update({f'w{i}': w for i, w in enumerate(self.weights)})
         payload.update({f'b{i}': b for i, b in enumerate(self.biases)})
         with open(path, 'wb') as stream:
@@ -137,10 +164,15 @@ class Network:
     @classmethod
     def load(cls, path):
         with np.load(path, allow_pickle=False) as archive:
-            if archive['version'].item() != 1 or list(archive['classes']) != ['B', 'M']:
+            if archive['version'].item() != 1 or list(archive['classes']) != [
+                'B',
+                'M',
+            ]:
                 raise ValueError('unsupported model format')
             model = cls(archive['layers'].tolist())
-            for i, (a, b) in enumerate(zip(model.layers[:-1], model.layers[1:])):
+            for i, (a, b) in enumerate(
+                zip(model.layers[:-1], model.layers[1:])
+            ):
                 w, bias = archive[f'w{i}'], archive[f'b{i}']
                 if w.shape != (a, b) or bias.shape != (1, b):
                     raise ValueError('invalid parameter shape')
@@ -148,7 +180,11 @@ class Network:
                     raise ValueError('non-finite model parameters')
                 model.weights[i], model.biases[i] = w, bias
             mean, scale = archive['mean'], archive['scale']
-            if mean.shape != (30,) or scale.shape != (30,) or not np.all(scale > 0):
+            if (
+                mean.shape != (30,)
+                or scale.shape != (30,)
+                or not np.all(scale > 0)
+            ):
                 raise ValueError('invalid scaler')
             if not np.all(np.isfinite(mean)) or not np.all(np.isfinite(scale)):
                 raise ValueError('non-finite scaler')

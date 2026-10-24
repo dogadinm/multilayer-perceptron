@@ -1,4 +1,5 @@
 """Persist epoch metrics and run settings as portable JSON."""
+
 import json
 from pathlib import Path
 import numpy as np
@@ -31,6 +32,8 @@ def load_history(path):
                 raise ValueError(f'{path}: missing {partition} metrics')
             for name in METRICS:
                 value = metrics.get(name)
-                if not isinstance(value, (float, int)) or not np.isfinite(value):
+                if not isinstance(value, (float, int)) or not np.isfinite(
+                    value
+                ):
                     raise ValueError(f'{path}: invalid {partition} {name}')
     return payload
