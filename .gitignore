@@ -6,3 +6,5 @@ data/*.csv
 models/*.npz
 plots/*.png
 .mplconfig/
+plots/**/*.png
+history/*.json

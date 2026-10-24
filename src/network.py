@@ -1,4 +1,4 @@
-"""Dense neural network: explicit forward, backward and SGD."""
+"""Dense neural network: explicit forward propagation, backpropagation and parameter updates."""
 from pathlib import Path
 import numpy as np
 
@@ -75,7 +75,7 @@ class Network:
         probabilities = softmax(logits)
         return activations, logits, probabilities
 
-    def backward(self, activations, probabilities, y):
+    def backpropagation(self, activations, probabilities, y):
         """Propagate the output loss gradient backward through each layer."""
         output_gradient = softmax_cross_entropy_gradient(y, probabilities)
         weight_gradients = [None] * len(self.weights)
@@ -92,28 +92,34 @@ class Network:
 
         return weight_gradients, bias_gradients
 
-    def gradients(self, x, y):
+    def compute_gradients(self, x, y):
         """Compute predictions first, then compute loss gradients."""
         activations, _, probabilities = self.forward(x)
-        return self.backward(activations, probabilities, y)
+        return self.backpropagation(activations, probabilities, y)
 
-    def update_parameters(self, weight_gradients, bias_gradients, learning_rate):
-        """Gradient descent step: move parameters against the gradient."""
+    def sgd_update(self, weight_gradients, bias_gradients, learning_rate):
+        """Apply an SGD update: move parameters against the gradient."""
         for layer in range(len(self.weights)):
             self.weights[layer] -= learning_rate * weight_gradients[layer]
             self.biases[layer] -= learning_rate * bias_gradients[layer]
 
-    def step(self, x, y, learning_rate):
-        """Process one batch: forward + backward, then update parameters."""
-        weight_gradients, bias_gradients = self.gradients(x, y)
-        self.update_parameters(weight_gradients, bias_gradients, learning_rate)
+    def train_batch(self, x, y, learning_rate, optimizer=None):
+        """Train on one batch: compute gradients, then apply SGD or the supplied optimizer."""
+        weight_gradients, bias_gradients = self.compute_gradients(x, y)
+        if optimizer is None:
+            self.sgd_update(weight_gradients, bias_gradients, learning_rate)
+        else:
+            parameters = self.weights + self.biases
+            gradients = weight_gradients + bias_gradients
+            optimizer.update(parameters, gradients, learning_rate)
 
     def predict_probabilities(self, x):
         """Run a forward pass for prediction without updating weights."""
         _, _, probabilities = self.forward(x)
         return probabilities
 
-    def metrics(self, x, y):
+    def evaluate(self, x, y):
+        """Evaluate loss and accuracy without updating parameters."""
         _, logits, probabilities = self.forward(x)
         loss = cross_entropy_from_logits(y, logits)
         accuracy = accuracy_score(y, probabilities)

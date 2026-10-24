@@ -1,28 +1,38 @@
-"""Plot training and validation curves after training."""
+"""Plot learning curves from one run or compare several saved runs."""
 import os
 from pathlib import Path
-import numpy as np
 
 
-def plot_curves(history, directory, show):
+def prepare_plotting(show):
     os.environ.setdefault('MPLCONFIGDIR', str(Path('.mplconfig').resolve()))
     import matplotlib
     if not show:
         matplotlib.use('Agg')
     import matplotlib.pyplot as plt
+    return plt
+
+
+def plot_runs(runs, directory, show, metrics=('loss', 'accuracy')):
+    """Each run is a (label, epoch-records) pair; allow different run lengths."""
+    plt = prepare_plotting(show)
     Path(directory).mkdir(parents=True, exist_ok=True)
-    values = np.asarray(history)
-    for name, train_col, valid_col in [('loss', 0, 2), ('accuracy', 1, 3)]:
+    for metric in metrics:
         fig, ax = plt.subplots()
-        epochs = np.arange(1, len(history) + 1)
-        ax.plot(epochs, values[:, train_col], label='Train')
-        ax.plot(epochs, values[:, valid_col], label='Validation')
-        ax.set(xlabel='Epoch', ylabel=name.capitalize(), title=f'{name.capitalize()} during training')
+        for index, (label, records) in enumerate(runs):
+            epochs = [record['epoch'] for record in records]
+            color = f'C{index % 10}'
+            for partition, style in [('train', '--'), ('validation', '-')]:
+                values = [record[partition][metric] for record in records]
+                ax.plot(epochs, values, linestyle=style, color=color, label=f'{label}: {partition}')
+        ax.set(xlabel='Epoch', ylabel=metric.capitalize(), title=f'{metric.capitalize()} during training')
         ax.legend()
         ax.grid(alpha=0.25)
         fig.tight_layout()
-        fig.savefig(Path(directory) / f'{name}.png', dpi=150)
+        fig.savefig(Path(directory) / f'{metric}.png', dpi=150)
     if show:
         plt.show()
     plt.close('all')
 
+
+def plot_curves(history, directory, show):
+    plot_runs([('Model', history)], directory, show)

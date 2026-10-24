@@ -3,7 +3,8 @@ import argparse
 from pathlib import Path
 import numpy as np
 from src.data import load_csv, write_csv, standardize
-from src.network import Network, binary_cross_entropy, accuracy_score
+from src.network import Network, binary_cross_entropy
+from src.metrics import classification_metrics, print_classification_metrics
 
 
 def create_parser():
@@ -45,7 +46,7 @@ def main():
         probabilities = predict_dataset(args.model, x)
         save_predictions(args.output, rows, probabilities)
         print(f'Binary cross-entropy: {binary_cross_entropy(y, probabilities):.6f}')
-        print(f'Accuracy: {accuracy_score(y, probabilities):.4f}')
+        print_classification_metrics(classification_metrics(y, probabilities))
         print(f'Predictions: {args.output}')
     except (ValueError, OSError, KeyError, FloatingPointError) as error:
         parser.error(str(error))

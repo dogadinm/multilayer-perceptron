@@ -11,15 +11,15 @@ class CoreTests(unittest.TestCase):
         rng = np.random.default_rng(13)
         x, y = rng.normal(size=(5, 30)), np.array([0, 1, 1, 0, 1])
         net = Network([30, 3, 3, 2], seed=7)
-        dw, db = net.gradients(x, y)
+        dw, db = net.compute_gradients(x, y)
         for parameters, gradients in [(net.weights, dw), (net.biases, db)]:
             for parameter, gradient in zip(parameters, gradients):
                 for index in np.ndindex(parameter.shape):
                     original = parameter[index]
                     parameter[index] = original + 1e-6
-                    plus = net.metrics(x, y)[0]
+                    plus = net.evaluate(x, y)[0]
                     parameter[index] = original - 1e-6
-                    minus = net.metrics(x, y)[0]
+                    minus = net.evaluate(x, y)[0]
                     parameter[index] = original
                     self.assertAlmostEqual((plus - minus) / 2e-6, gradient[index], places=6)
 
@@ -39,7 +39,7 @@ class CoreTests(unittest.TestCase):
         self.assertTrue(np.isfinite(binary_cross_entropy(np.array([1, 0]), p)))
         net = Network()
         x, y = np.ones((2, 30)), np.array([0, 1])
-        self.assertAlmostEqual(net.metrics(x, y)[0], binary_cross_entropy(y, net.forward(x)[2]))
+        self.assertAlmostEqual(net.evaluate(x, y)[0], binary_cross_entropy(y, net.forward(x)[2]))
 
     def test_split(self):
         y = np.array([0] * 40 + [1] * 20)
@@ -68,10 +68,10 @@ class CoreTests(unittest.TestCase):
         x = rng.normal(size=(100, 30))
         y = (x[:, 0] + x[:, 1] > 0).astype(int)
         net = Network(seed=42)
-        initial = net.metrics(x, y)[0]
+        initial = net.evaluate(x, y)[0]
         for _ in range(300):
-            net.step(x, y, .05)
-        loss, accuracy = net.metrics(x, y)
+            net.train_batch(x, y, .05)
+        loss, accuracy = net.evaluate(x, y)
         self.assertLess(loss, initial * .3)
         self.assertGreater(accuracy, .95)
 
